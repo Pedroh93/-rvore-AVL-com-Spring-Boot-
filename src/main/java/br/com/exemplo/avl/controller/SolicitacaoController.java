@@ -31,7 +31,7 @@ public class SolicitacaoController {
     @PostMapping
     public ResponseEntity<ApiResponse> cadastrar(@RequestBody SolicitacaoRequest request) {
         try {
-            service.cadastrar(request.getNumero(), request.getDescricao());
+            service.cadastrar(request.getNumero(),request.getSolicitante(), request.getDescricao());
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(new ApiResponse(true, "Solicitação cadastrada com sucesso."));
         } catch (RuntimeException e) {
