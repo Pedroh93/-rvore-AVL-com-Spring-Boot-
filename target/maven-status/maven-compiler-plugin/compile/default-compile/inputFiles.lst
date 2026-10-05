@@ -1,0 +1,9 @@
+/home/luiz-ubuntu/Documents/www/faculdade/estruturas_de_dados/arvore-avl-spring-boot/src/main/java/br/com/exemplo/avl/AvlApplication.java
+/home/luiz-ubuntu/Documents/www/faculdade/estruturas_de_dados/arvore-avl-spring-boot/src/main/java/br/com/exemplo/avl/controller/SolicitacaoController.java
+/home/luiz-ubuntu/Documents/www/faculdade/estruturas_de_dados/arvore-avl-spring-boot/src/main/java/br/com/exemplo/avl/dto/ApiResponse.java
+/home/luiz-ubuntu/Documents/www/faculdade/estruturas_de_dados/arvore-avl-spring-boot/src/main/java/br/com/exemplo/avl/dto/SolicitacaoRequest.java
+/home/luiz-ubuntu/Documents/www/faculdade/estruturas_de_dados/arvore-avl-spring-boot/src/main/java/br/com/exemplo/avl/model/NoAVL.java
+/home/luiz-ubuntu/Documents/www/faculdade/estruturas_de_dados/arvore-avl-spring-boot/src/main/java/br/com/exemplo/avl/model/Solicitacao.java
+/home/luiz-ubuntu/Documents/www/faculdade/estruturas_de_dados/arvore-avl-spring-boot/src/main/java/br/com/exemplo/avl/repository/ArvoreAVLRepository.java
+/home/luiz-ubuntu/Documents/www/faculdade/estruturas_de_dados/arvore-avl-spring-boot/src/main/java/br/com/exemplo/avl/repository/SolicitacaoRepository.java
+/home/luiz-ubuntu/Documents/www/faculdade/estruturas_de_dados/arvore-avl-spring-boot/src/main/java/br/com/exemplo/avl/service/SolicitacaoService.java
