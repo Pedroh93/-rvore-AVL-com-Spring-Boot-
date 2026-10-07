@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -31,7 +32,7 @@ public class SolicitacaoController {
     @PostMapping
     public ResponseEntity<ApiResponse> cadastrar(@RequestBody SolicitacaoRequest request) {
         try {
-            service.cadastrar(request.getNumero(),request.getSolicitante(), request.getDescricao());
+            service.cadastrar(request.getNumero(), request.getSolicitante(), request.getDescricao());
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(new ApiResponse(true, "Solicitação cadastrada com sucesso."));
         } catch (RuntimeException e) {
@@ -54,6 +55,20 @@ public class SolicitacaoController {
         }
 
         return ResponseEntity.ok(solicitacao);
+    }
+
+    @PutMapping("/{numero}")
+    public ResponseEntity<ApiResponse> alterar(
+            @PathVariable("numero") int numero,
+            @RequestBody SolicitacaoRequest request) {
+
+        ApiResponse resposta = service.alterarSolicitacao(numero, request);
+
+        if (!resposta.isSucesso()) {
+            return ResponseEntity.badRequest().body(resposta);
+        }
+
+        return ResponseEntity.ok(resposta);
     }
 
     @DeleteMapping("/{numero}")
