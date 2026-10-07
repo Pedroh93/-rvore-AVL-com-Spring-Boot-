@@ -147,4 +147,15 @@ public class ArvoreAVLRepository implements SolicitacaoRepository {
         if (n.direita != null)
             exibir(n.direita, np, true, sb);
     }
+
+    @Override
+    public boolean alterar(int numero, String solicitante, String descricao) {
+        Solicitacao s = buscar(numero); // Reutiliza a busca binária em O(log n)
+        if (s != null) {
+            s.setSolicitante(solicitante);
+            s.setDescricao(descricao);
+            return true;
+        }
+        return false;
+    }
 }

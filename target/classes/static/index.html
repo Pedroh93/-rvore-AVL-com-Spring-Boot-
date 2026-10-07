@@ -25,17 +25,21 @@
         <div class="col-lg-4">
             <div class="card">
                 <div class="card-body">
-                    <h5 class="card-title">Cadastrar solicitação</h5>
+                    <h5 class="card-title">Nova solicitação</h5>
                     <form id="formCadastro">
                         <div class="mb-3">
                             <label for="numero" class="form-label">Número</label>
                             <input id="numero" type="number" class="form-control" required>
                         </div>
                         <div class="mb-3">
-                            <label for="descricao" class="form-label">Descrição</label>
-                            <input id="descricao" class="form-control" required>
+                            <label for="solicitante" class="form-label">Solicitante</label>
+                            <input id="solicitante" class="form-control" maxlength="120" required>
                         </div>
-                        <button class="btn btn-primary w-100">Inserir na AVL</button>
+                        <div class="mb-3">
+                            <label for="descricao" class="form-label">Descrição</label>
+                            <textarea id="descricao" class="form-control" rows="3" maxlength="500" required></textarea>
+                        </div>
+                        <button class="btn btn-primary w-100">Cadastrar solicitação</button>
                     </form>
                     <hr>
                     <button id="carregarExemplo" class="btn btn-outline-secondary w-100">
@@ -67,6 +71,8 @@
                     <thead>
                         <tr>
                             <th>Número</th>
+                            <th>Solicitante</th>
+                            <th>Data de abertura</th>
                             <th>Descrição</th>
                             <th class="text-end">Ações</th>
                         </tr>
@@ -78,7 +84,41 @@
     </div>
 </div>
 
-<!-- Toast substitui alert()/popup e não interrompe a interação do usuário. -->
+<div class="modal fade" id="modalEditar" tabindex="-1" aria-labelledby="modalEditarTitulo" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="formEditar">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalEditarTitulo">Alterar solicitação</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="editarNumero" class="form-label">Número</label>
+                        <input id="editarNumero" class="form-control" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editarData" class="form-label">Data de abertura</label>
+                        <input id="editarData" class="form-control" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editarSolicitante" class="form-label">Solicitante</label>
+                        <input id="editarSolicitante" class="form-control" maxlength="120" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editarDescricao" class="form-label">Descrição</label>
+                        <textarea id="editarDescricao" class="form-control" rows="3" maxlength="500" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <div class="toast-container position-fixed top-0 end-0 p-3">
     <div id="toastNotificacao" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
         <div class="toast-header">
@@ -92,6 +132,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 const API = '/solicitacoes';
+let solicitacoes = [];
 
 function mostrarToast(titulo, mensagem) {
     document.getElementById('toastTitulo').textContent = titulo;
@@ -100,6 +141,36 @@ function mostrarToast(titulo, mensagem) {
     const elemento = document.getElementById('toastNotificacao');
     const toast = bootstrap.Toast.getOrCreateInstance(elemento, { delay: 3000 });
     toast.show();
+}
+
+function escapar(texto) {
+    return String(texto ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+}
+
+function formatarData(valor) {
+    if (!valor) {
+        return '—';
+    }
+
+    let data;
+    if (Array.isArray(valor)) {
+        const [ano, mes, dia, hora = 0, minuto = 0] = valor;
+        data = new Date(ano, mes - 1, dia, hora, minuto);
+    } else {
+        data = new Date(valor);
+    }
+
+    if (Number.isNaN(data.getTime())) {
+        return String(valor);
+    }
+
+    const dois = (n) => String(n).padStart(2, '0');
+    return `${dois(data.getDate())}/${dois(data.getMonth() + 1)}/${data.getFullYear()} ${dois(data.getHours())}:${dois(data.getMinutes())}`;
 }
 
 async function lerJsonSeguro(resposta) {
@@ -121,44 +192,65 @@ async function atualizar() {
             throw new Error('Falha ao consultar a API.');
         }
 
-        const lista = await listaResp.json();
+        solicitacoes = await listaResp.json();
         const arvore = await arvoreResp.text();
 
         document.getElementById('arvore').textContent = arvore.trim() || '(árvore vazia)';
 
-        document.getElementById('tabela').innerHTML = lista.length
-            ? lista.map(s => `
+        document.getElementById('tabela').innerHTML = solicitacoes.length
+            ? solicitacoes.map(s => `
                 <tr>
-                    <td><strong>${s.numero}</strong></td>
-                    <td>${s.descricao}</td>
-                    <td class="text-end">
-                        <button class="btn btn-sm btn-outline-danger" onclick="remover(${s.numero})">
+                    <td><strong>${escapar(s.numero)}</strong></td>
+                    <td>${escapar(s.solicitante)}</td>
+                    <td>${escapar(formatarData(s.dataAbertura))}</td>
+                    <td>${escapar(s.descricao)}</td>
+                    <td class="text-end text-nowrap">
+                        <button class="btn btn-sm btn-outline-primary" data-acao="editar" data-numero="${escapar(s.numero)}">
+                            Editar
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" data-acao="remover" data-numero="${escapar(s.numero)}">
                             Remover
                         </button>
                     </td>
                 </tr>`).join('')
-            : '<tr><td colspan="3" class="text-center text-muted">Nenhuma solicitação cadastrada.</td></tr>';
+            : '<tr><td colspan="5" class="text-center text-muted">Nenhuma solicitação cadastrada.</td></tr>';
     } catch (erro) {
         mostrarToast('Erro', 'Não foi possível acessar a API. Verifique se o Spring Boot está executando.');
     }
 }
 
-async function inserir(numero, descricao, silencioso = false) {
+async function inserir(numero, solicitante, descricao, silencioso = false) {
     const resposta = await fetch(API, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ numero, descricao })
+        body: JSON.stringify({ numero, solicitante, descricao })
     });
 
     const dados = await lerJsonSeguro(resposta);
 
-    if (!resposta.ok) {
+    if (!resposta.ok || dados.sucesso === false) {
         throw new Error(dados.mensagem || 'Não foi possível cadastrar.');
     }
 
     if (!silencioso) {
-        mostrarToast('Sucesso', dados.mensagem);
+        mostrarToast('Sucesso', dados.mensagem || 'Solicitação cadastrada com sucesso.');
     }
+}
+
+async function alterar(numero, solicitante, descricao) {
+    const resposta = await fetch(API + '/' + numero, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ solicitante, descricao })
+    });
+
+    const dados = await lerJsonSeguro(resposta);
+
+    if (!resposta.ok || dados.sucesso === false) {
+        throw new Error(dados.mensagem || 'Solicitação não encontrada.');
+    }
+
+    return dados;
 }
 
 async function remover(numero) {
@@ -166,33 +258,101 @@ async function remover(numero) {
         const resposta = await fetch(API + '/' + numero, { method: 'DELETE' });
         const dados = await lerJsonSeguro(resposta);
 
-        if (!resposta.ok) {
+        if (!resposta.ok || dados.sucesso === false) {
             mostrarToast('Atenção', dados.mensagem || 'Solicitação não encontrada.');
             return;
         }
 
-        mostrarToast('Remoção', dados.mensagem);
+        mostrarToast('Remoção', dados.mensagem || 'Solicitação removida com sucesso.');
         await atualizar();
     } catch (erro) {
         mostrarToast('Erro', 'Não foi possível comunicar com o servidor.');
     }
 }
 
+function abrirEdicao(numero) {
+    const solicitacao = solicitacoes.find(item => item.numero === numero);
+
+    if (!solicitacao) {
+        mostrarToast('Atenção', 'Solicitação não encontrada.');
+        return;
+    }
+
+    document.getElementById('editarNumero').value = solicitacao.numero;
+    document.getElementById('editarData').value = formatarData(solicitacao.dataAbertura);
+    document.getElementById('editarSolicitante').value = solicitacao.solicitante || '';
+    document.getElementById('editarDescricao').value = solicitacao.descricao || '';
+
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalEditar')).show();
+}
+
+document.getElementById('tabela').addEventListener('click', (evento) => {
+    const botao = evento.target.closest('button[data-acao]');
+    if (!botao) {
+        return;
+    }
+
+    const numero = Number(botao.dataset.numero);
+    if (botao.dataset.acao === 'editar') {
+        abrirEdicao(numero);
+    } else if (botao.dataset.acao === 'remover') {
+        remover(numero);
+    }
+});
+
 document.getElementById('formCadastro').addEventListener('submit', async (evento) => {
     evento.preventDefault();
 
     const numero = Number(document.getElementById('numero').value);
+    const solicitante = document.getElementById('solicitante').value.trim();
     const descricao = document.getElementById('descricao').value.trim();
 
-    if (!numero || !descricao) {
-        mostrarToast('Atenção', 'Preencha o número e a descrição.');
+    if (!numero) {
+        mostrarToast('Atenção', 'Informe o número da solicitação.');
+        return;
+    }
+
+    if (!solicitante) {
+        mostrarToast('Atenção', 'Informe o nome do solicitante.');
+        return;
+    }
+
+    if (!descricao) {
+        mostrarToast('Atenção', 'Informe a descrição da solicitação.');
         return;
     }
 
     try {
-        await inserir(numero, descricao);
+        await inserir(numero, solicitante, descricao);
         evento.target.reset();
         document.getElementById('numero').focus();
+        await atualizar();
+    } catch (erro) {
+        mostrarToast('Erro', erro.message);
+    }
+});
+
+document.getElementById('formEditar').addEventListener('submit', async (evento) => {
+    evento.preventDefault();
+
+    const numero = Number(document.getElementById('editarNumero').value);
+    const solicitante = document.getElementById('editarSolicitante').value.trim();
+    const descricao = document.getElementById('editarDescricao').value.trim();
+
+    if (!solicitante) {
+        mostrarToast('Atenção', 'Informe o nome do solicitante.');
+        return;
+    }
+
+    if (!descricao) {
+        mostrarToast('Atenção', 'Informe a descrição da solicitação.');
+        return;
+    }
+
+    try {
+        const dados = await alterar(numero, solicitante, descricao);
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('modalEditar')).hide();
+        mostrarToast('Sucesso', dados.mensagem || 'Solicitação alterada com sucesso.');
         await atualizar();
     } catch (erro) {
         mostrarToast('Erro', erro.message);
@@ -203,22 +363,22 @@ document.getElementById('atualizar').addEventListener('click', atualizar);
 
 document.getElementById('carregarExemplo').addEventListener('click', async () => {
     const dados = [
-        [50, 'Problema no servidor'],
-        [30, 'Computador não inicia'],
-        [70, 'Falha de conexão'],
-        [20, 'Impressora não funciona'],
-        [40, 'Erro no sistema'],
-        [60, 'Problema de acesso'],
-        [80, 'Troca de equipamento'],
-        [10, 'Instalação de software'],
-        [25, 'Configuração de usuário']
+        [50, 'Paulo Lima', 'Problema no servidor'],
+        [30, 'Ana Souza', 'Computador não inicia'],
+        [70, 'Carlos Mendes', 'Falha de conexão'],
+        [20, 'Juliana Costa', 'Impressora não funciona'],
+        [40, 'Rafael Dias', 'Erro no sistema'],
+        [60, 'Fernanda Alves', 'Problema de acesso'],
+        [80, 'Bruno Martins', 'Troca de equipamento'],
+        [10, 'Camila Rocha', 'Instalação de software'],
+        [25, 'Diego Nunes', 'Configuração de usuário']
     ];
 
     let inseridos = 0;
 
-    for (const [numero, descricao] of dados) {
+    for (const [numero, solicitante, descricao] of dados) {
         try {
-            await inserir(numero, descricao, true);
+            await inserir(numero, solicitante, descricao, true);
             inseridos++;
         } catch {
             // Registros já existentes são ignorados ao carregar o exemplo.
